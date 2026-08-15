@@ -74,7 +74,7 @@ function useTheme() {
   return { dark, toggle };
 }
 
-function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
+function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: (() => void) | undefined }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -109,7 +109,7 @@ function SidebarContent({
 }: {
   isAdmin: boolean;
   name: string;
-  onNavigate?: () => void;
+  onNavigate?: (() => void) | undefined;
   onSignOut: () => void;
 }) {
   return (
