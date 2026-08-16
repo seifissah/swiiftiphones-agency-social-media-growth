@@ -67,7 +67,7 @@ function AdminCustomers() {
       });
   }, [customers, accounts, metrics, q, status]);
 
-  async function setStatusFor(id: string, name: string, next: string) {
+  async function setStatusFor(id: string, name: string, next: "active" | "suspended") {
     const { error } = await supabase.from("profiles").update({ status: next }).eq("id", id);
     if (error) {
       toast.error(error.message);
