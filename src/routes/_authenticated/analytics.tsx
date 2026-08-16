@@ -130,7 +130,7 @@ function Analytics() {
       <section className="panel p-5">
         <h2 className="font-display text-lg font-semibold">Engagement rate</h2>
         <div className="mt-4">
-          <GrowthChart data={series} dataKey="engagement" variant="line" suffix="%" />
+          <EngagementChart data={series} />
         </div>
       </section>
 
