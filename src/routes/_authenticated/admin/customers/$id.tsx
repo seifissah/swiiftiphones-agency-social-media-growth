@@ -111,7 +111,10 @@ function CustomerDetail() {
       profile_url: newAccount.url.trim() || null,
       data_source: "manual",
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setNewAccount({ platform: "instagram", handle: "", url: "" });
     toast.success("Social account added.");
     qc.invalidateQueries({ queryKey: ["accounts"] });
@@ -119,7 +122,10 @@ function CustomerDetail() {
 
   async function removeAccount(accountId: string) {
     const { error } = await supabase.from("social_accounts").delete().eq("id", accountId);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Account removed.");
     qc.invalidateQueries({ queryKey: ["accounts"] });
     qc.invalidateQueries({ queryKey: ["metrics"] });
@@ -127,7 +133,10 @@ function CustomerDetail() {
 
   async function addMetric(e: React.FormEvent) {
     e.preventDefault();
-    if (!metricForm.accountId) return toast.error("Choose an account first.");
+    if (!metricForm.accountId) {
+      toast.error("Choose an account first.");
+      return;
+    }
     const num = (v: string) => (v.trim() ? Number(v) : 0);
     const { error } = await supabase.from("social_metrics").insert({
       social_account_id: metricForm.accountId,
@@ -142,7 +151,10 @@ function CustomerDetail() {
       engagement_rate: num(metricForm.engagement_rate),
       source: "manual",
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await logAudit({
       adminName: admin?.full_name ?? "Admin",
       action: "recorded metrics",
@@ -166,7 +178,10 @@ function CustomerDetail() {
       target_value: Number(goalForm.target_value),
       deadline: goalForm.deadline || null,
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await notify(
       id,
       "New goal set",
@@ -179,14 +194,20 @@ function CustomerDetail() {
 
   async function saveNotes() {
     const { error } = await supabase.from("profiles").update({ admin_notes: notes }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Notes saved.");
     qc.invalidateQueries({ queryKey: ["customer", id] });
   }
 
   async function changeStatus(next: "active" | "suspended" | "rejected") {
     const { error } = await supabase.from("profiles").update({ status: next }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await logAudit({
       adminName: admin?.full_name ?? "Admin",
       action: `set status to ${next}`,
