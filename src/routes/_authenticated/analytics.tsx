@@ -11,7 +11,7 @@ import {
   growth,
   nf,
 } from "@/lib/platform";
-import { GrowthChart } from "@/components/app/GrowthChart";
+import { EngagementChart, GrowthChart } from "@/components/app/GrowthChart";
 import { EmptyState, LoadingBlock, PageHeader } from "@/components/app/PageHeader";
 import {
   Table,
