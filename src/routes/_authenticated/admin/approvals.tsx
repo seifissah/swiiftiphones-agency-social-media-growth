@@ -50,7 +50,7 @@ function Approvals() {
       action: approve ? "approved customer" : "rejected customer",
       customerId: id,
       customerName: name,
-      details: notes[id] ?? null,
+      details: notes[id] ?? "",
     });
     setBusy(null);
     toast.success(approve ? `${name} approved.` : `${name} rejected.`);
