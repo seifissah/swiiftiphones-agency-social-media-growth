@@ -22,6 +22,8 @@ import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authen
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedAdminAccountsRouteImport } from './routes/_authenticated/admin/accounts'
+import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin/approvals'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminCustomersIndexRouteImport } from './routes/_authenticated/admin/customers/index'
@@ -92,6 +94,18 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminAccountsRoute =
+  AuthenticatedAdminAccountsRouteImport.update({
+    id: '/admin/accounts',
+    path: '/admin/accounts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminAnalyticsRoute =
+  AuthenticatedAdminAnalyticsRouteImport.update({
+    id: '/admin/analytics',
+    path: '/admin/analytics',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminApprovalsRoute =
   AuthenticatedAdminApprovalsRouteImport.update({
     id: '/admin/approvals',
@@ -130,6 +144,8 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/accounts': typeof AuthenticatedAdminAccountsRoute
+  '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
@@ -148,6 +164,8 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/accounts': typeof AuthenticatedAdminAccountsRoute
+  '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
@@ -168,6 +186,8 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/admin/accounts': typeof AuthenticatedAdminAccountsRoute
+  '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
@@ -188,6 +208,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reports'
     | '/settings'
+    | '/admin/accounts'
+    | '/admin/analytics'
     | '/admin/approvals'
     | '/admin/dashboard'
     | '/admin/customers/$id'
@@ -206,6 +228,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reports'
     | '/settings'
+    | '/admin/accounts'
+    | '/admin/analytics'
     | '/admin/approvals'
     | '/admin/dashboard'
     | '/admin/customers/$id'
@@ -225,6 +249,8 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/admin/accounts'
+    | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/customers/$id'
@@ -331,6 +357,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/accounts': {
+      id: '/_authenticated/admin/accounts'
+      path: '/admin/accounts'
+      fullPath: '/admin/accounts'
+      preLoaderRoute: typeof AuthenticatedAdminAccountsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/analytics': {
+      id: '/_authenticated/admin/analytics'
+      path: '/admin/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/approvals': {
       id: '/_authenticated/admin/approvals'
       path: '/admin/approvals'
@@ -372,6 +412,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedAdminAccountsRoute: typeof AuthenticatedAdminAccountsRoute
+  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminCustomersIdRoute: typeof AuthenticatedAdminCustomersIdRoute
@@ -388,6 +430,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedAdminAccountsRoute: AuthenticatedAdminAccountsRoute,
+  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminCustomersIdRoute: AuthenticatedAdminCustomersIdRoute,
