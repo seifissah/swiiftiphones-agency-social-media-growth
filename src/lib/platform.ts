@@ -73,7 +73,6 @@ export type Profile = {
   bio: string | null;
   avatar_url: string | null;
   status: string;
-  admin_notes: string | null;
   is_demo: boolean;
   last_login: string | null;
   created_at: string;
