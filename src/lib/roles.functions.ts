@@ -73,7 +73,7 @@ export const claimRole = createServerFn({ method: "POST" })
         .from("profiles")
         .insert({
           user_id: userId,
-          full_name: str("full_name") ?? str("name") ?? email || "New user",
+          full_name: str("full_name") ?? str("name") ?? (email || "New user"),
           username,
           email,
           phone: str("phone"),
