@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +85,21 @@ function CustomerDetail() {
     target_value: "",
     deadline: "",
   });
-  const [notes, setNotes] = useState(customer?.admin_notes ?? "");
+  const { data: adminNote } = useQuery({
+    queryKey: ["admin-note", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profile_admin_notes")
+        .select("notes")
+        .eq("profile_id", id)
+        .maybeSingle();
+      return data?.notes ?? "";
+    },
+  });
+  const [notes, setNotes] = useState("");
+  useEffect(() => {
+    if (adminNote !== undefined) setNotes(adminNote);
+  }, [adminNote]);
 
   const latest = latestPerAccount(metrics ?? []);
   const prev = previousPerAccount(metrics ?? []);
@@ -193,13 +207,15 @@ function CustomerDetail() {
   }
 
   async function saveNotes() {
-    const { error } = await supabase.from("profiles").update({ admin_notes: notes }).eq("id", id);
+    const { error } = await supabase
+      .from("profile_admin_notes")
+      .upsert({ profile_id: id, notes, updated_at: new Date().toISOString() });
     if (error) {
       toast.error(error.message);
       return;
     }
     toast.success("Notes saved.");
-    qc.invalidateQueries({ queryKey: ["customer", id] });
+    qc.invalidateQueries({ queryKey: ["admin-note", id] });
   }
 
   async function changeStatus(next: "active" | "suspended" | "rejected") {

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Clock, LogOut, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppProvider } from "@/lib/app-context";
+import { claimRole } from "@/lib/roles.functions";
 import type { Profile } from "@/lib/platform";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
@@ -30,12 +31,12 @@ async function loadMe() {
 
   let isAdmin = (roles ?? []).some((r) => r.role === "admin");
 
-  // The very first account created on a fresh platform becomes the administrator.
+  // Role assignment happens server-side; the first ever account becomes admin.
   if (!isAdmin && !(roles ?? []).length) {
-    const { data: claimed } = await supabase.rpc("bootstrap_admin");
-    if (claimed) isAdmin = true;
-    else await supabase.from("user_roles").insert({ user_id: user.id, role: "customer" });
+    const { isAdmin: claimed } = await claimRole();
+    isAdmin = claimed;
   }
+
 
   const fresh = isAdmin
     ? ((await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle()).data ??

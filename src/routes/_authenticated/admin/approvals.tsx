@@ -27,11 +27,14 @@ function Approvals() {
     setBusy(id);
     const { error } = await supabase
       .from("profiles")
-      .update({
-        status: approve ? "active" : "rejected",
-        admin_notes: notes[id] ?? null,
-      })
+      .update({ status: approve ? "active" : "rejected" })
       .eq("id", id);
+    if (notes[id]) {
+      await supabase
+        .from("profile_admin_notes")
+        .upsert({ profile_id: id, notes: notes[id], updated_at: new Date().toISOString() });
+    }
+
     if (error) {
       setBusy(null);
       toast.error(error.message);

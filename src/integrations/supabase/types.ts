@@ -264,9 +264,34 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_admin_notes: {
+        Row: {
+          notes: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          notes?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          notes?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_admin_notes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
-          admin_notes: string | null
           avatar_url: string | null
           bio: string | null
           company_name: string | null
@@ -283,7 +308,6 @@ export type Database = {
           username: string
         }
         Insert: {
-          admin_notes?: string | null
           avatar_url?: string | null
           bio?: string | null
           company_name?: string | null
@@ -300,7 +324,6 @@ export type Database = {
           username: string
         }
         Update: {
-          admin_notes?: string | null
           avatar_url?: string | null
           bio?: string | null
           company_name?: string | null
@@ -450,7 +473,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      bootstrap_admin: { Args: never; Returns: boolean }
       current_customer_id: { Args: never; Returns: string }
       has_role: {
         Args: {
