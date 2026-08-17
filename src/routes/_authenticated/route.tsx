@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Clock, LogOut, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppProvider } from "@/lib/app-context";
+import { claimRole } from "@/lib/roles.functions";
 import type { Profile } from "@/lib/platform";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
