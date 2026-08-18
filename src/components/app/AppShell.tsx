@@ -154,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { dark, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const { data: settings } = useSettings();
-  const brand = settings?.platform_name?.trim() || "Pulsegrid";
+  const brand = settings?.platform_name?.trim() || "Swiiftiphones Agency";
   const { data: notifications } = useNotifications(isAdmin ? undefined : profile?.id);
   const unread = (notifications ?? []).filter((n) => !n.read).length;
   const name = profile?.full_name ?? email;

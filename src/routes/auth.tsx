@@ -14,13 +14,13 @@ import { PLATFORMS, PLATFORM_LABEL } from "@/lib/platform";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Pulsegrid" },
+      { title: "Sign in — Swiiftiphones Agency" },
       {
         name: "description",
         content:
-          "Sign in or request access to the Pulsegrid social media growth and reporting platform.",
+          "Sign in or request access to the Swiiftiphones Agency social media growth and reporting platform.",
       },
-      { property: "og:title", content: "Sign in — Pulsegrid" },
+      { property: "og:title", content: "Sign in — Swiiftiphones Agency" },
       {
         property: "og:description",
         content: "Access your social media growth dashboard and monthly reports.",
@@ -50,7 +50,7 @@ function AuthPage() {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
             <Activity className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg font-semibold">Pulsegrid</span>
+          <span className="font-display text-lg font-semibold">Swiiftiphones Agency</span>
         </Link>
         <div className="max-w-md">
           <h2 className="font-display text-4xl font-semibold leading-tight">

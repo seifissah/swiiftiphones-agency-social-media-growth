@@ -18,7 +18,7 @@ function AdminSettings() {
   const qc = useQueryClient();
   const { data: settings, isLoading } = useSettings();
   const [form, setForm] = useState({
-    platform_name: "Pulsegrid",
+    platform_name: "Swiiftiphones Agency",
     auto_approve: false,
     show_rankings_to_customers: false,
     weight_growth: 40,

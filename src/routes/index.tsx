@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pulsegrid — Social Media Client Growth Platform" },
+      { title: "Swiiftiphones Agency — Social Media Client Growth Platform" },
       {
         name: "description",
         content:
           "Manage social media clients, approve accounts, track follower growth across platforms and publish branded monthly performance reports.",
       },
-      { property: "og:title", content: "Pulsegrid — Social Media Client Growth Platform" },
+      { property: "og:title", content: "Swiiftiphones Agency — Social Media Client Growth Platform" },
       {
         property: "og:description",
         content:
@@ -63,7 +63,7 @@ function Landing() {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
             <Activity className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg font-semibold">Pulsegrid</span>
+          <span className="font-display text-lg font-semibold">Swiiftiphones Agency</span>
         </div>
         <Button asChild size="sm">
           <Link to="/auth">Sign in</Link>
@@ -79,7 +79,7 @@ function Landing() {
             Every client's growth, tracked and reported in one place.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Pulsegrid gives agencies an admin portal for approvals, accounts, analytics and
+            Swiiftiphones Agency gives agencies an admin portal for approvals, accounts, analytics and
             reporting — and gives every client a private dashboard that answers one question: how is
             my social media performing?
           </p>
@@ -109,7 +109,7 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        Pulsegrid — social media client growth &amp; reporting.
+        Swiiftiphones Agency — social media client growth &amp; reporting.
       </footer>
     </div>
   );
