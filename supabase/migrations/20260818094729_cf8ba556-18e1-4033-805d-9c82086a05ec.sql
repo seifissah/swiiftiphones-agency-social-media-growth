@@ -1,0 +1,1 @@
+UPDATE public.platform_settings SET platform_name = 'Swiiftiphones Agency', updated_at = now() WHERE id = 1;
