@@ -31,14 +31,17 @@ async function loadMe() {
 
   let isAdmin = (roles ?? []).some((r) => r.role === "admin");
 
-  // Role assignment happens server-side; the first ever account becomes admin.
-  if (!isAdmin && !(roles ?? []).length) {
+  // Role + profile provisioning happens server-side; the first ever account
+  // becomes admin. Also covers email-confirmation and Google sign-ups, which
+  // have no client session at the moment of registration.
+  let needsRefetch = false;
+  if (!(roles ?? []).length || !profile) {
     const { isAdmin: claimed } = await claimRole();
     isAdmin = claimed;
+    needsRefetch = true;
   }
 
-
-  const fresh = isAdmin
+  const fresh = needsRefetch
     ? ((await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle()).data ??
       profile)
     : profile;
