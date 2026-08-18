@@ -224,10 +224,22 @@ function RegisterForm({
       return;
     }
     setBusy(true);
+    const cleanHandles = Object.fromEntries(
+      Object.entries(handles).filter(([, v]) => v.trim()),
+    );
     const { data, error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          full_name: form.full_name.trim(),
+          username: form.username.trim().toLowerCase(),
+          phone: form.phone || null,
+          company_name: form.company_name || null,
+          handles: cleanHandles,
+        },
+      },
     });
     if (error) {
       setBusy(false);
