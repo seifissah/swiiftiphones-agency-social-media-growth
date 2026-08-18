@@ -104,11 +104,13 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: (() => 
 function SidebarContent({
   isAdmin,
   name,
+  brand,
   onNavigate,
   onSignOut,
 }: {
   isAdmin: boolean;
   name: string;
+  brand: string;
   onNavigate?: (() => void) | undefined;
   onSignOut: () => void;
 }) {
