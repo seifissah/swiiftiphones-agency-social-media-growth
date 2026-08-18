@@ -24,7 +24,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/lib/app-context";
-import { useNotifications } from "@/lib/data";
+import { useNotifications, useSettings } from "@/lib/data";
 import { initials } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -121,7 +121,7 @@ function SidebarContent({
           <Activity className="h-5 w-5" />
         </span>
         <span>
-          <span className="block font-display text-base font-semibold leading-tight">Pulsegrid</span>
+          <span className="block font-display text-base font-semibold leading-tight">{brand}</span>
           <span className="block text-[11px] uppercase tracking-wider text-sidebar-foreground/55">
             {isAdmin ? "Admin portal" : "Client portal"}
           </span>
@@ -153,6 +153,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { dark, toggle } = useTheme();
   const [open, setOpen] = useState(false);
+  const { data: settings } = useSettings();
+  const brand = settings?.platform_name?.trim() || "Pulsegrid";
   const { data: notifications } = useNotifications(isAdmin ? undefined : profile?.id);
   const unread = (notifications ?? []).filter((n) => !n.read).length;
   const name = profile?.full_name ?? email;
@@ -167,7 +169,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border lg:block">
-        <SidebarContent isAdmin={isAdmin} name={name} onSignOut={handleSignOut} />
+        <SidebarContent isAdmin={isAdmin} name={name} brand={brand} onSignOut={handleSignOut} />
       </aside>
 
       <div className="lg:pl-64">
@@ -183,6 +185,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <SidebarContent
                 isAdmin={isAdmin}
                 name={name}
+                brand={brand}
                 onNavigate={() => setOpen(false)}
                 onSignOut={handleSignOut}
               />
