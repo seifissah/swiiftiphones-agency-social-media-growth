@@ -75,6 +75,7 @@ export type Profile = {
   status: string;
   is_demo: boolean;
   last_login: string | null;
+  updated_at: string;
   created_at: string;
 };
 
