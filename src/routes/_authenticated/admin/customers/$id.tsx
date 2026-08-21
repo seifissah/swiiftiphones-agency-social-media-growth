@@ -41,6 +41,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -300,7 +308,7 @@ function CustomerDetail() {
         <StatCard label="Accounts" value={accounts?.length ?? 0} />
       </div>
 
-      <Tabs defaultValue="growth">
+      <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="growth">Growth</TabsTrigger>
@@ -310,6 +318,81 @@ function CustomerDetail() {
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile" className="mt-4 space-y-4">
+          <section className="panel p-5">
+            <h2 className="font-display text-lg font-semibold">Account details</h2>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                ["Full name", customer.full_name],
+                ["Username", `@${customer.username}`],
+                ["Email", customer.email],
+                ["Phone", customer.phone || "—"],
+                ["Company", customer.company_name || "—"],
+                ["Status", STATUS_LABEL[customer.status] ?? customer.status],
+                ["Signed up", new Date(customer.created_at).toLocaleString()],
+                [
+                  "Last login",
+                  customer.last_login ? new Date(customer.last_login).toLocaleString() : "Never",
+                ],
+                ["Last updated", new Date(customer.updated_at).toLocaleString()],
+              ].map(([label, value]) => (
+                <div key={label as string}>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 break-words text-sm font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {customer.bio ? (
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Bio</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm">{customer.bio}</p>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="panel p-5">
+            <h2 className="font-display text-lg font-semibold">Edit history</h2>
+            <p className="text-sm text-muted-foreground">
+              Every change this client makes to their profile is recorded here, including the
+              original value.
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Field</TableHead>
+                    <TableHead>Was</TableHead>
+                    <TableHead>Changed to</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(changeLog ?? []).map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {new Date(c.changed_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="capitalize">{c.field.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="text-muted-foreground line-through">
+                        {c.old_value || "—"}
+                      </TableCell>
+                      <TableCell className="font-medium">{c.new_value || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!(changeLog ?? []).length ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                        No profile edits recorded yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+        </TabsContent>
+
 
         <TabsContent value="growth" className="mt-4">
           <section className="panel p-5">
