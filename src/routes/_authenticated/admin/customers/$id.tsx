@@ -96,6 +96,18 @@ function CustomerDetail() {
       return data?.notes ?? "";
     },
   });
+  const { data: changeLog } = useQuery({
+    queryKey: ["profile-changes", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profile_change_log")
+        .select("id, field, old_value, new_value, changed_at")
+        .eq("profile_id", id)
+        .order("changed_at", { ascending: false })
+        .limit(100);
+      return data ?? [];
+    },
+  });
   const [notes, setNotes] = useState("");
   useEffect(() => {
     if (adminNote !== undefined) setNotes(adminNote);
@@ -290,6 +302,7 @@ function CustomerDetail() {
 
       <Tabs defaultValue="growth">
         <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="growth">Growth</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="metrics">Add metrics</TabsTrigger>
