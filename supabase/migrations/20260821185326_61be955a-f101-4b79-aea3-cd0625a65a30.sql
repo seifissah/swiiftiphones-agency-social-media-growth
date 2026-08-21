@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.log_profile_changes() FROM PUBLIC, anon, authenticated;

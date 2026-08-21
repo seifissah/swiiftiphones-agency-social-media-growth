@@ -290,6 +290,44 @@ export type Database = {
           },
         ]
       }
+      profile_change_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          field: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          profile_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          field: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          profile_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          field?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_change_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
