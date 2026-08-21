@@ -237,3 +237,136 @@ export const MONTHS = [
   "November",
   "December",
 ];
+
+/** Build a per-month rollup from raw metric rows (last snapshot of each month). */
+export type MonthlyRow = {
+  key: string;
+  label: string;
+  followers: number;
+  gained: number;
+  engagement: number;
+  reach: number;
+  impressions: number;
+  posts: number;
+  views: number;
+};
+
+export function monthlyRollup(metrics: Metric[]): MonthlyRow[] {
+  const byMonth = new Map<string, Metric[]>();
+  for (const m of metrics) {
+    const key = m.recorded_on.slice(0, 7);
+    const list = byMonth.get(key) ?? [];
+    list.push(m);
+    byMonth.set(key, list);
+  }
+  const rows = [...byMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, list]) => {
+      // per account, keep the latest snapshot of that month
+      const latest = latestPerAccount(list);
+      const [y, mo] = key.split("-");
+      return {
+        key,
+        label: `${MONTHS[Number(mo) - 1]} ${y}`,
+        followers: sumField(latest, "followers"),
+        gained: 0,
+        engagement: Number(avgEngagement(latest).toFixed(2)),
+        reach: sumField(latest, "reach"),
+        impressions: sumField(latest, "impressions"),
+        posts: sumField(latest, "posts"),
+        views: sumField(latest, "views"),
+      } satisfies MonthlyRow;
+    });
+  for (let i = 0; i < rows.length; i++) {
+    const cur = rows[i]!;
+    const prev = rows[i - 1];
+    cur.gained = prev ? cur.followers - prev.followers : 0;
+  }
+  return rows;
+}
+
+export type PerformanceStats = {
+  followers: number;
+  gained: number;
+  growthPct: number;
+  engagement: number;
+  reach: number;
+  posts: number;
+  score: number;
+};
+
+export function computeStats(metrics: Metric[]): PerformanceStats {
+  const last = latestPerAccount(metrics);
+  const prev = previousPerAccount(metrics);
+  const followers = sumField(last, "followers");
+  const prevFollowers = sumField(prev, "followers");
+  const growthPct = growth(followers, prevFollowers);
+  const engagement = avgEngagement(last);
+  const reach = sumField(last, "reach");
+  const posts = sumField(last, "posts");
+  return {
+    followers,
+    gained: followers - prevFollowers,
+    growthPct,
+    engagement,
+    reach,
+    posts,
+    score: performanceScore({ growthPct, engagement, reach, posts }),
+  };
+}
+
+/** Performance-driven narrative summary for a reporting period. */
+export function buildSummary(name: string, period: string, s: PerformanceStats) {
+  const band = scoreBand(s.score);
+  return `${name} finished ${period} with ${nf.format(s.followers)} followers (${
+    s.gained >= 0 ? "+" : ""
+  }${nf.format(s.gained)}, ${s.growthPct >= 0 ? "+" : ""}${s.growthPct.toFixed(
+    1,
+  )}%), an average engagement rate of ${s.engagement.toFixed(2)}% and ${compact(
+    s.reach,
+  )} total reach across ${nf.format(s.posts)} tracked posts. Overall performance is rated ${band.label.toLowerCase()} (${s.score}/100).`;
+}
+
+/** Recommendations derived strictly from the client's own performance numbers. */
+export function buildRecommendations(s: PerformanceStats) {
+  const out: string[] = [];
+
+  if (s.growthPct < 0)
+    out.push(
+      "• Follower count is shrinking — audit recent posts for drops in relevance and pause anything that under-performed, then rebuild with proven formats.",
+    );
+  else if (s.growthPct < 3)
+    out.push(
+      "• Growth is below 3% — raise posting cadence and run collaborations or shout-outs to reach new audiences.",
+    );
+  else if (s.growthPct < 8)
+    out.push("• Growth is steady — double down on the formats driving the current gains.");
+  else
+    out.push("• Growth is exceptional — capture it with a follow-focused CTA and consistent series.");
+
+  if (s.engagement < 1.5)
+    out.push(
+      "• Engagement is very low — reply to every comment within the first hour and switch to conversation-driving formats (polls, questions, carousels).",
+    );
+  else if (s.engagement < 3)
+    out.push("• Engagement is under benchmark — test hooks in the first 3 seconds and stronger captions.");
+  else if (s.engagement < 6)
+    out.push("• Engagement is healthy — repurpose the top posts across the other platforms.");
+  else out.push("• Engagement is outstanding — turn the most-commented posts into a recurring series.");
+
+  if (s.reach < 20000)
+    out.push("• Reach is limited — publish short-form video with trending audio and platform-native hashtags.");
+  else if (s.reach < 100000)
+    out.push("• Reach is building — boost the two best organic posts to widen the top of funnel.");
+  else out.push("• Reach is strong — convert it with clearer calls-to-action and link placements.");
+
+  if (s.posts < 8)
+    out.push("• Publishing volume is low — target at least 3 posts per week for consistent distribution.");
+  else if (s.posts > 40)
+    out.push("• Volume is very high — shift effort from quantity to production quality.");
+
+  if (s.score < 50)
+    out.push("• Priority this month: fix the weakest metric above before adding new channels.");
+
+  return out.join("\n");
+}
