@@ -516,7 +516,82 @@ function CustomerDetail() {
           </form>
         </TabsContent>
 
-        <TabsContent value="metrics" className="mt-4">
+        <TabsContent value="metrics" className="mt-4 space-y-4">
+          <section className="panel p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold">Monthly view</h2>
+                <p className="text-sm text-muted-foreground">
+                  Month-by-month snapshot of this client's social performance.
+                </p>
+              </div>
+              <div className="w-full sm:w-64">
+                <Select value={monthAccount} onValueChange={setMonthAccount}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All accounts</SelectItem>
+                    {(accounts ?? []).map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {PLATFORM_LABEL[a.platform]} · {a.handle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="mt-4 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead className="text-right">Followers</TableHead>
+                    <TableHead className="text-right">Gained</TableHead>
+                    <TableHead className="text-right">Engagement</TableHead>
+                    <TableHead className="text-right">Reach</TableHead>
+                    <TableHead className="text-right">Posts</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthly.map((m) => (
+                    <TableRow key={m.key}>
+                      <TableCell className="whitespace-nowrap font-medium">{m.label}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {nf.format(m.followers)}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "text-right tabular-nums",
+                          m.gained > 0
+                            ? "text-success"
+                            : m.gained < 0
+                              ? "text-destructive"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {m.gained > 0 ? "+" : ""}
+                        {nf.format(m.gained)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {m.engagement.toFixed(2)}%
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{compact(m.reach)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{nf.format(m.posts)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!monthly.length ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        No metric snapshots recorded yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+
           <form onSubmit={addMetric} className="panel grid gap-3 p-5 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>Account</Label>
