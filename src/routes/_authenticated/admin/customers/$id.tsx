@@ -258,6 +258,42 @@ function CustomerDetail() {
     qc.invalidateQueries({ queryKey: ["admin-note", id] });
   }
 
+  async function generateReport(publish: boolean) {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const period = `${MONTHS[month - 1]} ${year}`;
+    setGenerating(true);
+    const { error } = await supabase.from("monthly_reports").insert({
+      customer_id: id,
+      month,
+      year,
+      summary: buildSummary(customer!.full_name, period, stats),
+      recommendations: buildRecommendations(stats),
+      performance_score: stats.score,
+      status: publish ? "published" : "draft",
+    });
+    setGenerating(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await logAudit({
+      adminName: admin?.full_name ?? "Admin",
+      action: publish ? "published monthly report" : "generated monthly report",
+      customerId: id,
+      customerName: customer!.full_name,
+      details: period,
+    });
+    if (publish) {
+      await notify(id, "New monthly report available", `Your ${period} report has been published.`);
+    }
+    toast.success(publish ? "Report published." : "Draft report generated.");
+    qc.invalidateQueries({ queryKey: ["reports"] });
+  }
+
+
+
   async function changeStatus(next: "active" | "suspended" | "rejected") {
     const { error } = await supabase.from("profiles").update({ status: next }).eq("id", id);
     if (error) {
