@@ -68,6 +68,24 @@ export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+const PLATFORM_BASE: Record<string, string> = {
+  instagram: "https://instagram.com/",
+  facebook: "https://facebook.com/",
+  tiktok: "https://tiktok.com/@",
+  youtube: "https://youtube.com/@",
+  twitter: "https://x.com/",
+  linkedin: "https://linkedin.com/in/",
+};
+
+/** Direct link to a client's social profile, falling back to a handle-based URL. */
+function accountLink(platform: string, handle: string, profileUrl: string | null) {
+  if (profileUrl?.trim()) return profileUrl.trim();
+  const base = PLATFORM_BASE[platform];
+  if (!base) return null;
+  return base + handle.trim().replace(/^@/, "");
+}
+
+
 function CustomerDetail() {
   const { id } = Route.useParams();
   const { profile: admin } = useApp();
