@@ -7,15 +7,10 @@ import { useApp } from "@/lib/app-context";
 import { logAudit, notify, useAccounts, useCustomers, useMetrics, useReports } from "@/lib/data";
 import {
   MONTHS,
-  avgEngagement,
-  compact,
-  growth,
-  latestPerAccount,
-  nf,
-  performanceScore,
-  previousPerAccount,
+  buildRecommendations,
+  buildSummary,
+  computeStats,
   scoreBand,
-  sumField,
 } from "@/lib/platform";
 import { LoadingBlock, PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -65,24 +60,7 @@ function AdminReports() {
 
   function statsFor(id: string) {
     const accIds = new Set((accounts ?? []).filter((a) => a.customer_id === id).map((a) => a.id));
-    const rows = (metrics ?? []).filter((m) => accIds.has(m.social_account_id));
-    const last = latestPerAccount(rows);
-    const prev = previousPerAccount(rows);
-    const followers = sumField(last, "followers");
-    const prevFollowers = sumField(prev, "followers");
-    const growthPct = growth(followers, prevFollowers);
-    const engagement = avgEngagement(last);
-    const reach = sumField(last, "reach");
-    const posts = sumField(last, "posts");
-    return {
-      followers,
-      gained: followers - prevFollowers,
-      growthPct,
-      engagement,
-      reach,
-      posts,
-      score: performanceScore({ growthPct, engagement, reach, posts }),
-    };
+    return computeStats((metrics ?? []).filter((m) => accIds.has(m.social_account_id)));
   }
 
   async function generate(e: React.FormEvent) {
@@ -93,25 +71,9 @@ function AdminReports() {
     }
     const s = statsFor(customerId);
     const name = nameById.get(customerId) ?? "Client";
-    const band = scoreBand(s.score);
-    const summary = `${name} finished ${MONTHS[Number(month) - 1]} ${year} with ${nf.format(
-      s.followers,
-    )} followers (${s.gained >= 0 ? "+" : ""}${nf.format(s.gained)}, ${
-      s.growthPct >= 0 ? "+" : ""
-    }${s.growthPct.toFixed(1)}%), an average engagement rate of ${s.engagement.toFixed(
-      2,
-    )}% and ${compact(s.reach)} total reach. Overall performance is rated ${band.label.toLowerCase()}.`;
-    const recommendations = [
-      s.growthPct < 3
-        ? "• Increase posting cadence and test collaborations to accelerate follower growth."
-        : "• Maintain the current publishing rhythm — growth is compounding well.",
-      s.engagement < 3
-        ? "• Prioritise conversation-driving formats (polls, questions, replies) to lift engagement."
-        : "• Engagement is healthy; repurpose top-performing posts across platforms.",
-      s.reach < 50000
-        ? "• Invest in short-form video and trending audio to expand reach."
-        : "• Reach is strong; convert it with clearer calls-to-action.",
-    ].join("\n");
+    const period = `${MONTHS[Number(month) - 1]} ${year}`;
+    const summary = buildSummary(name, period, s);
+    const recommendations = buildRecommendations(s);
 
     setBusy(true);
     const { error } = await supabase.from("monthly_reports").insert({
