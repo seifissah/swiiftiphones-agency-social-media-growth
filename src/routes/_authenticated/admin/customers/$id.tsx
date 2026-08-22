@@ -461,18 +461,104 @@ function CustomerDetail() {
 
         <TabsContent value="accounts" className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            {(accounts ?? []).map((a) => (
-              <article key={a.id} className="panel flex items-center justify-between p-4">
-                <div>
-                  <p className="font-medium">{PLATFORM_LABEL[a.platform] ?? a.platform}</p>
-                  <p className="text-sm text-muted-foreground">{a.handle}</p>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => removeAccount(a.id)}>
-                  Remove
-                </Button>
-              </article>
-            ))}
+            {(accounts ?? []).map((a) => {
+              const rows = (metrics ?? []).filter((m) => m.social_account_id === a.id);
+              const snap = latestPerAccount(rows)[0];
+              const months = monthlyRollup(rows).slice(-6).reverse();
+              const url = accountLink(a.platform, a.handle, a.profile_url);
+              const open = openAccount === a.id;
+              return (
+                <article key={a.id} className="panel p-4 md:col-span-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{PLATFORM_LABEL[a.platform] ?? a.platform}</p>
+                      <p className="text-sm text-muted-foreground">{a.handle}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {a.connection_status} · {a.data_source}
+                        {a.last_synced_at
+                          ? ` · synced ${new Date(a.last_synced_at).toLocaleDateString()}`
+                          : ""}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {url ? (
+                        <Button asChild size="sm" variant="outline">
+                          <a href={url} target="_blank" rel="noreferrer noopener">
+                            <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open
+                          </a>
+                        </Button>
+                      ) : null}
+                      <Button size="sm" onClick={() => setOpenAccount(open ? null : a.id)}>
+                        {open ? "Hide" : "Details"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => removeAccount(a.id)}>
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                  {open ? (
+                    <div className="mt-4 space-y-3 border-t border-border pt-3 text-sm">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                          ["Followers", snap ? nf.format(snap.followers) : "—"],
+                          ["Engagement", snap ? `${Number(snap.engagement_rate).toFixed(2)}%` : "—"],
+                          ["Reach", snap ? compact(snap.reach) : "—"],
+                          ["Posts", snap ? nf.format(snap.posts) : "—"],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                              {label}
+                            </p>
+                            <p className="mt-0.5 font-medium tabular-nums">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Month</TableHead>
+                              <TableHead className="text-right">Followers</TableHead>
+                              <TableHead className="text-right">Gained</TableHead>
+                              <TableHead className="text-right">Eng.</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {months.map((m) => (
+                              <TableRow key={m.key}>
+                                <TableCell className="whitespace-nowrap">{m.label}</TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                  {nf.format(m.followers)}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                  {m.gained > 0 ? "+" : ""}
+                                  {nf.format(m.gained)}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                  {m.engagement.toFixed(2)}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {!months.length ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="py-6 text-center text-muted-foreground"
+                                >
+                                  No snapshots for this account yet.
+                                </TableCell>
+                              </TableRow>
+                            ) : null}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
+
           <form onSubmit={addAccount} className="panel grid gap-3 p-5 sm:grid-cols-4">
             <div className="space-y-2">
               <Label>Platform</Label>
