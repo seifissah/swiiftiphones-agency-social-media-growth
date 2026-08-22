@@ -122,6 +122,9 @@ function CustomerDetail() {
     },
   });
   const [notes, setNotes] = useState("");
+  const [monthAccount, setMonthAccount] = useState("all");
+  const [openAccount, setOpenAccount] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   useEffect(() => {
     if (adminNote !== undefined) setNotes(adminNote);
   }, [adminNote]);
@@ -136,6 +139,18 @@ function CustomerDetail() {
   const score = performanceScore({ growthPct, engagement, reach, posts });
   const band = scoreBand(score);
   const series = useMemo(() => buildSeries(metrics ?? []), [metrics]);
+
+  const scopedMetrics = useMemo(
+    () =>
+      monthAccount === "all"
+        ? (metrics ?? [])
+        : (metrics ?? []).filter((m) => m.social_account_id === monthAccount),
+    [metrics, monthAccount],
+  );
+  const monthly = useMemo(() => monthlyRollup(scopedMetrics).slice().reverse(), [scopedMetrics]);
+  const stats = useMemo(() => computeStats(metrics ?? []), [metrics]);
+  const recommendations = useMemo(() => buildRecommendations(stats), [stats]);
+
 
   if (isLoading) return <LoadingBlock rows={4} />;
   if (!customer) return <EmptyState title="Customer not found" />;
