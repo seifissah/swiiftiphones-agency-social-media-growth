@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/lib/app-context";
@@ -21,17 +21,22 @@ import {
   STATUS_LABEL,
   STATUS_TONE,
   avgEngagement,
+  buildRecommendations,
   buildSeries,
+  buildSummary,
   compact,
+  computeStats,
   growth,
   initials,
   latestPerAccount,
+  monthlyRollup,
   nf,
   performanceScore,
   previousPerAccount,
   scoreBand,
   sumField,
 } from "@/lib/platform";
+
 import { GrowthChart } from "@/components/app/GrowthChart";
 import { StatCard } from "@/components/app/StatCard";
 import { EmptyState, LoadingBlock } from "@/components/app/PageHeader";
@@ -62,6 +67,24 @@ export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
 });
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+const PLATFORM_BASE: Record<string, string> = {
+  instagram: "https://instagram.com/",
+  facebook: "https://facebook.com/",
+  tiktok: "https://tiktok.com/@",
+  youtube: "https://youtube.com/@",
+  twitter: "https://x.com/",
+  linkedin: "https://linkedin.com/in/",
+};
+
+/** Direct link to a client's social profile, falling back to a handle-based URL. */
+function accountLink(platform: string, handle: string, profileUrl: string | null) {
+  if (profileUrl?.trim()) return profileUrl.trim();
+  const base = PLATFORM_BASE[platform];
+  if (!base) return null;
+  return base + handle.trim().replace(/^@/, "");
+}
+
 
 function CustomerDetail() {
   const { id } = Route.useParams();
@@ -117,6 +140,9 @@ function CustomerDetail() {
     },
   });
   const [notes, setNotes] = useState("");
+  const [monthAccount, setMonthAccount] = useState("all");
+  const [openAccount, setOpenAccount] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   useEffect(() => {
     if (adminNote !== undefined) setNotes(adminNote);
   }, [adminNote]);
@@ -131,6 +157,18 @@ function CustomerDetail() {
   const score = performanceScore({ growthPct, engagement, reach, posts });
   const band = scoreBand(score);
   const series = useMemo(() => buildSeries(metrics ?? []), [metrics]);
+
+  const scopedMetrics = useMemo(
+    () =>
+      monthAccount === "all"
+        ? (metrics ?? [])
+        : (metrics ?? []).filter((m) => m.social_account_id === monthAccount),
+    [metrics, monthAccount],
+  );
+  const monthly = useMemo(() => monthlyRollup(scopedMetrics).slice().reverse(), [scopedMetrics]);
+  const stats = useMemo(() => computeStats(metrics ?? []), [metrics]);
+  const recommendations = useMemo(() => buildRecommendations(stats), [stats]);
+
 
   if (isLoading) return <LoadingBlock rows={4} />;
   if (!customer) return <EmptyState title="Customer not found" />;
@@ -237,6 +275,42 @@ function CustomerDetail() {
     toast.success("Notes saved.");
     qc.invalidateQueries({ queryKey: ["admin-note", id] });
   }
+
+  async function generateReport(publish: boolean) {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const period = `${MONTHS[month - 1]} ${year}`;
+    setGenerating(true);
+    const { error } = await supabase.from("monthly_reports").insert({
+      customer_id: id,
+      month,
+      year,
+      summary: buildSummary(customer!.full_name, period, stats),
+      recommendations: buildRecommendations(stats),
+      performance_score: stats.score,
+      status: publish ? "published" : "draft",
+    });
+    setGenerating(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await logAudit({
+      adminName: admin?.full_name ?? "Admin",
+      action: publish ? "published monthly report" : "generated monthly report",
+      customerId: id,
+      customerName: customer!.full_name,
+      details: period,
+    });
+    if (publish) {
+      await notify(id, "New monthly report available", `Your ${period} report has been published.`);
+    }
+    toast.success(publish ? "Report published." : "Draft report generated.");
+    qc.invalidateQueries({ queryKey: ["reports"] });
+  }
+
+
 
   async function changeStatus(next: "active" | "suspended" | "rejected") {
     const { error } = await supabase.from("profiles").update({ status: next }).eq("id", id);
@@ -405,18 +479,104 @@ function CustomerDetail() {
 
         <TabsContent value="accounts" className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            {(accounts ?? []).map((a) => (
-              <article key={a.id} className="panel flex items-center justify-between p-4">
-                <div>
-                  <p className="font-medium">{PLATFORM_LABEL[a.platform] ?? a.platform}</p>
-                  <p className="text-sm text-muted-foreground">{a.handle}</p>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => removeAccount(a.id)}>
-                  Remove
-                </Button>
-              </article>
-            ))}
+            {(accounts ?? []).map((a) => {
+              const rows = (metrics ?? []).filter((m) => m.social_account_id === a.id);
+              const snap = latestPerAccount(rows)[0];
+              const months = monthlyRollup(rows).slice(-6).reverse();
+              const url = accountLink(a.platform, a.handle, a.profile_url);
+              const open = openAccount === a.id;
+              return (
+                <article key={a.id} className="panel p-4 md:col-span-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{PLATFORM_LABEL[a.platform] ?? a.platform}</p>
+                      <p className="text-sm text-muted-foreground">{a.handle}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {a.connection_status} · {a.data_source}
+                        {a.last_synced_at
+                          ? ` · synced ${new Date(a.last_synced_at).toLocaleDateString()}`
+                          : ""}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {url ? (
+                        <Button asChild size="sm" variant="outline">
+                          <a href={url} target="_blank" rel="noreferrer noopener">
+                            <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open
+                          </a>
+                        </Button>
+                      ) : null}
+                      <Button size="sm" onClick={() => setOpenAccount(open ? null : a.id)}>
+                        {open ? "Hide" : "Details"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => removeAccount(a.id)}>
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                  {open ? (
+                    <div className="mt-4 space-y-3 border-t border-border pt-3 text-sm">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                          ["Followers", snap ? nf.format(snap.followers) : "—"],
+                          ["Engagement", snap ? `${Number(snap.engagement_rate).toFixed(2)}%` : "—"],
+                          ["Reach", snap ? compact(snap.reach) : "—"],
+                          ["Posts", snap ? nf.format(snap.posts) : "—"],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                              {label}
+                            </p>
+                            <p className="mt-0.5 font-medium tabular-nums">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Month</TableHead>
+                              <TableHead className="text-right">Followers</TableHead>
+                              <TableHead className="text-right">Gained</TableHead>
+                              <TableHead className="text-right">Eng.</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {months.map((m) => (
+                              <TableRow key={m.key}>
+                                <TableCell className="whitespace-nowrap">{m.label}</TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                  {nf.format(m.followers)}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                  {m.gained > 0 ? "+" : ""}
+                                  {nf.format(m.gained)}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                  {m.engagement.toFixed(2)}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {!months.length ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="py-6 text-center text-muted-foreground"
+                                >
+                                  No snapshots for this account yet.
+                                </TableCell>
+                              </TableRow>
+                            ) : null}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
+
           <form onSubmit={addAccount} className="panel grid gap-3 p-5 sm:grid-cols-4">
             <div className="space-y-2">
               <Label>Platform</Label>
@@ -460,7 +620,82 @@ function CustomerDetail() {
           </form>
         </TabsContent>
 
-        <TabsContent value="metrics" className="mt-4">
+        <TabsContent value="metrics" className="mt-4 space-y-4">
+          <section className="panel p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold">Monthly view</h2>
+                <p className="text-sm text-muted-foreground">
+                  Month-by-month snapshot of this client's social performance.
+                </p>
+              </div>
+              <div className="w-full sm:w-64">
+                <Select value={monthAccount} onValueChange={setMonthAccount}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All accounts</SelectItem>
+                    {(accounts ?? []).map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {PLATFORM_LABEL[a.platform]} · {a.handle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="mt-4 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead className="text-right">Followers</TableHead>
+                    <TableHead className="text-right">Gained</TableHead>
+                    <TableHead className="text-right">Engagement</TableHead>
+                    <TableHead className="text-right">Reach</TableHead>
+                    <TableHead className="text-right">Posts</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthly.map((m) => (
+                    <TableRow key={m.key}>
+                      <TableCell className="whitespace-nowrap font-medium">{m.label}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {nf.format(m.followers)}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "text-right tabular-nums",
+                          m.gained > 0
+                            ? "text-success"
+                            : m.gained < 0
+                              ? "text-destructive"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {m.gained > 0 ? "+" : ""}
+                        {nf.format(m.gained)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {m.engagement.toFixed(2)}%
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{compact(m.reach)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{nf.format(m.posts)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!monthly.length ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        No metric snapshots recorded yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+
           <form onSubmit={addMetric} className="panel grid gap-3 p-5 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>Account</Label>
@@ -579,6 +814,46 @@ function CustomerDetail() {
         </TabsContent>
 
         <TabsContent value="reports" className="mt-4 space-y-3">
+          <section className="panel p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold">
+                  Performance-based report for {customer.full_name}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Generated from this client's own numbers — score {stats.score}/100 ·{" "}
+                  {scoreBand(stats.score).label}.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" disabled={generating} onClick={() => generateReport(false)}>
+                  Save as draft
+                </Button>
+                <Button disabled={generating} onClick={() => generateReport(true)}>
+                  Generate &amp; publish
+                </Button>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3 border-t border-border pt-4 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Summary</p>
+                <p className="mt-1">
+                  {buildSummary(
+                    customer.full_name,
+                    `${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`,
+                    stats,
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Recommendations
+                </p>
+                <p className="mt-1 whitespace-pre-line text-muted-foreground">{recommendations}</p>
+              </div>
+            </div>
+          </section>
+
           {(reports ?? []).length === 0 ? (
             <EmptyState
               title="No reports yet"
