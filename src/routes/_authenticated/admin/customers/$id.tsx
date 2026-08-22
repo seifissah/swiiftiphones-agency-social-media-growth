@@ -635,6 +635,46 @@ function CustomerDetail() {
         </TabsContent>
 
         <TabsContent value="reports" className="mt-4 space-y-3">
+          <section className="panel p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold">
+                  Performance-based report for {customer.full_name}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Generated from this client's own numbers — score {stats.score}/100 ·{" "}
+                  {scoreBand(stats.score).label}.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" disabled={generating} onClick={() => generateReport(false)}>
+                  Save as draft
+                </Button>
+                <Button disabled={generating} onClick={() => generateReport(true)}>
+                  Generate &amp; publish
+                </Button>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3 border-t border-border pt-4 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Summary</p>
+                <p className="mt-1">
+                  {buildSummary(
+                    customer.full_name,
+                    `${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`,
+                    stats,
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Recommendations
+                </p>
+                <p className="mt-1 whitespace-pre-line text-muted-foreground">{recommendations}</p>
+              </div>
+            </div>
+          </section>
+
           {(reports ?? []).length === 0 ? (
             <EmptyState
               title="No reports yet"
