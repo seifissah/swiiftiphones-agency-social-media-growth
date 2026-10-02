@@ -265,7 +265,7 @@ function AdminReports() {
         </div>
         <div className="flex items-end">
           <Button type="submit" className="w-full" disabled={busy}>
-            Generate report
+            Preview full report
           </Button>
         </div>
         <div className="space-y-2 sm:col-span-4">
@@ -299,6 +299,9 @@ function AdminReports() {
                   <TableCell className="capitalize text-muted-foreground">{r.status}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => openExisting(r)}>
+                        View
+                      </Button>
                       {r.status !== "published" ? (
                         <Button size="sm" onClick={() => publish(r.id, r.customer_id, label)}>
                           Publish
@@ -322,6 +325,58 @@ function AdminReports() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Report preview</DialogTitle>
+            <DialogDescription>
+              This is exactly what the client will see. Edit any section before publishing.
+            </DialogDescription>
+          </DialogHeader>
+          {preview ? (
+            editing ? (
+              <div className="space-y-3">
+                {(
+                  [
+                    ["acknowledgement", "Acknowledgement"],
+                    ["achievements", "What we achieved"],
+                    ["summary", "Summary"],
+                    ["recommendations", "Recommendations for next month"],
+                  ] as const
+                ).map(([k, l]) => (
+                  <div key={k} className="space-y-1">
+                    <Label>{l}</Label>
+                    <Textarea rows={4} value={preview.draft[k]} onChange={(e) => setField(k, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ReportPreview
+                clientName={nameById.get(preview.customerId) ?? "Client"}
+                month={preview.month}
+                year={preview.year}
+                score={preview.score}
+                metrics={metricsFor(preview.customerId)}
+                draft={preview.draft}
+              />
+            )
+          ) : null}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditing((v) => !v)}>
+              {editing ? "Back to preview" : "Edit sections"}
+            </Button>
+            <Button variant="secondary" disabled={busy} onClick={() => savePreview(false)}>
+              {preview?.status === "published" ? "Save changes" : "Save as draft"}
+            </Button>
+            {preview?.status !== "published" ? (
+              <Button disabled={busy} onClick={() => savePreview(true)}>
+                Publish to client
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
