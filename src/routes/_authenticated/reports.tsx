@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import { useApp } from "@/lib/app-context";
-import { useReports, type Report } from "@/lib/data";
+import { useAccounts, useMetrics, useReports, type Report } from "@/lib/data";
+import { ReportPreview, unpackSummary } from "@/components/app/ReportPreview";
 import { MONTHS, scoreBand } from "@/lib/platform";
 import { EmptyState, LoadingBlock, PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -14,16 +15,23 @@ export const Route = createFileRoute("/_authenticated/reports")({
 });
 
 function reportText(r: Report, name: string) {
+  const s = unpackSummary(r.summary);
   return [
     `${name} — Monthly performance report`,
     `${MONTHS[r.month - 1]} ${r.year}`,
     ``,
     `Performance score: ${r.performance_score}/100`,
     ``,
-    `Summary`,
-    r.summary ?? "—",
+    `Acknowledgement`,
+    s.acknowledgement || "—",
     ``,
-    `Recommendations`,
+    `What we achieved`,
+    s.achievements || "—",
+    ``,
+    `Summary`,
+    s.summary || "—",
+    ``,
+    `Recommendations for next month`,
     r.recommendations ?? "—",
   ].join("\n");
 }
@@ -31,6 +39,9 @@ function reportText(r: Report, name: string) {
 function MyReports() {
   const { profile } = useApp();
   const { data: reports, isLoading } = useReports(profile?.id);
+  const { data: accounts } = useAccounts(profile?.id);
+  const ids = useMemo(() => (accounts ?? []).map((a) => a.id), [accounts]);
+  const { data: metrics } = useMetrics(ids);
   const [openId, setOpenId] = useState<string | null>(null);
 
   if (isLoading) return <LoadingBlock rows={3} />;
@@ -90,17 +101,15 @@ function MyReports() {
                   </div>
                 </div>
                 {open ? (
-                  <div className="mt-5 space-y-4 border-t border-border pt-4 text-sm">
-                    <div>
-                      <h3 className="font-semibold">Summary</h3>
-                      <p className="mt-1 text-muted-foreground">{r.summary ?? "—"}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Recommendations</h3>
-                      <p className="mt-1 whitespace-pre-line text-muted-foreground">
-                        {r.recommendations ?? "—"}
-                      </p>
-                    </div>
+                  <div className="mt-5 border-t border-border pt-4">
+                    <ReportPreview
+                      clientName={profile?.full_name ?? "Client"}
+                      month={r.month}
+                      year={r.year}
+                      score={r.performance_score}
+                      metrics={metrics ?? []}
+                      draft={{ ...unpackSummary(r.summary), recommendations: r.recommendations ?? "" }}
+                    />
                   </div>
                 ) : null}
               </article>
