@@ -76,6 +76,35 @@ function ProfilePage() {
     <div>
       <PageHeader title="Profile" description="Keep your contact details up to date." />
       <form onSubmit={save} className="panel max-w-2xl space-y-4 p-6">
+        <div className="flex items-center gap-4">
+          <span className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-xl font-semibold text-muted-foreground">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile picture" className="h-full w-full object-cover" />
+            ) : (
+              initials(profile?.full_name ?? "?")
+            )}
+          </span>
+          <div className="space-y-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => fileInput.current?.click()}
+            >
+              <Camera className="mr-2 h-4 w-4" />
+              {uploading ? "Uploading…" : "Change picture"}
+            </Button>
+            <p className="text-xs text-muted-foreground">JPG or PNG, up to 5 MB.</p>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={pickAvatar}
+            />
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="full_name">Full name</Label>
