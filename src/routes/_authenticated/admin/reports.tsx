@@ -40,6 +40,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import {
+  ReportPreview,
+  buildAchievements,
+  buildAcknowledgement,
+  packSummary,
+  unpackSummary,
+  type ReportDraft,
+} from "@/components/app/ReportPreview";
 
 export const Route = createFileRoute("/_authenticated/admin/reports")({
   component: AdminReports,
@@ -60,6 +68,16 @@ function AdminReports() {
   const [year, setYear] = useState(String(now.getFullYear()));
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [preview, setPreview] = useState<{
+    reportId: string | null;
+    customerId: string;
+    month: number;
+    year: number;
+    score: number;
+    status: string;
+    draft: ReportDraft;
+  } | null>(null);
 
   const nameById = useMemo(
     () => new Map((customers ?? []).map((c) => [c.id, c.full_name])),
@@ -71,29 +89,74 @@ function AdminReports() {
     return computeStats((metrics ?? []).filter((m) => accIds.has(m.social_account_id)));
   }
 
-  async function generate(e: React.FormEvent) {
+  function metricsFor(id: string) {
+    const accIds = new Set((accounts ?? []).filter((a) => a.customer_id === id).map((a) => a.id));
+    return (metrics ?? []).filter((m) => accIds.has(m.social_account_id));
+  }
+
+  function generate(e: React.FormEvent) {
     e.preventDefault();
     if (!customerId) {
       toast.error("Choose a customer.");
       return;
     }
-    const s = statsFor(customerId);
+    const m = Number(month);
+    const y = Number(year);
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    const upto = metricsFor(customerId).filter((x) => x.recorded_on.slice(0, 7) <= key);
+    const s = computeStats(upto);
     const name = nameById.get(customerId) ?? "Client";
-    const period = `${MONTHS[Number(month) - 1]} ${year}`;
-    const summary = buildSummary(name, period, s);
-    const recommendations = buildRecommendations(s);
-
-    setBusy(true);
-    const { error } = await supabase.from("monthly_reports").insert({
-      customer_id: customerId,
-      month: Number(month),
-      year: Number(year),
-      summary,
-      recommendations,
-      admin_notes: notes || null,
-      performance_score: s.score,
+    const period = `${MONTHS[m - 1]} ${y}`;
+    setPreview({
+      reportId: null,
+      customerId,
+      month: m,
+      year: y,
+      score: s.score,
       status: "draft",
+      draft: {
+        acknowledgement: buildAcknowledgement(name, period),
+        achievements: buildAchievements(upto, m, y),
+        summary: buildSummary(name, period, s),
+        recommendations: buildRecommendations(s),
+      },
     });
+    setEditing(false);
+  }
+
+  function openExisting(r: NonNullable<typeof reports>[number]) {
+    setPreview({
+      reportId: r.id,
+      customerId: r.customer_id,
+      month: r.month,
+      year: r.year,
+      score: r.performance_score,
+      status: r.status,
+      draft: { ...unpackSummary(r.summary), recommendations: r.recommendations ?? "" },
+    });
+    setEditing(false);
+  }
+
+  async function savePreview(publishNow: boolean) {
+    if (!preview) return;
+    const name = nameById.get(preview.customerId) ?? "Client";
+    const label = `${MONTHS[preview.month - 1]} ${preview.year}`;
+    const payload = {
+      summary: packSummary(preview.draft),
+      recommendations: preview.draft.recommendations,
+      status: publishNow ? "published" : preview.status === "published" ? "published" : "draft",
+    };
+    setBusy(true);
+    const { error } = preview.reportId
+      ? await supabase.from("monthly_reports").update(payload).eq("id", preview.reportId)
+      : await supabase.from("monthly_reports").insert({
+          ...payload,
+          customer_id: preview.customerId,
+          month: preview.month,
+          year: preview.year,
+          admin_notes: notes || null,
+          performance_score: preview.score,
+        });
     setBusy(false);
     if (error) {
       toast.error(error.message);
@@ -101,15 +164,22 @@ function AdminReports() {
     }
     await logAudit({
       adminName: admin?.full_name ?? "Admin",
-      action: "generated monthly report",
-      customerId,
+      action: publishNow ? "published monthly report" : "saved monthly report",
+      customerId: preview.customerId,
       customerName: name,
-      details: `${MONTHS[Number(month) - 1]} ${year}`,
+      details: label,
     });
+    if (publishNow && preview.status !== "published")
+      await notify(preview.customerId, "New monthly report available", `Your ${label} report has been published.`);
     setNotes("");
-    toast.success("Report generated as draft.");
+    setPreview(null);
+    toast.success(publishNow ? "Report published to client." : "Report saved as draft.");
     qc.invalidateQueries({ queryKey: ["reports"] });
     qc.invalidateQueries({ queryKey: ["audit"] });
+  }
+
+  function setField(k: keyof ReportDraft, v: string) {
+    setPreview((p) => (p ? { ...p, draft: { ...p.draft, [k]: v } } : p));
   }
 
   async function publish(reportId: string, cid: string, label: string) {
@@ -195,7 +265,7 @@ function AdminReports() {
         </div>
         <div className="flex items-end">
           <Button type="submit" className="w-full" disabled={busy}>
-            Generate report
+            Preview full report
           </Button>
         </div>
         <div className="space-y-2 sm:col-span-4">
@@ -229,6 +299,9 @@ function AdminReports() {
                   <TableCell className="capitalize text-muted-foreground">{r.status}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => openExisting(r)}>
+                        View
+                      </Button>
                       {r.status !== "published" ? (
                         <Button size="sm" onClick={() => publish(r.id, r.customer_id, label)}>
                           Publish
@@ -252,6 +325,58 @@ function AdminReports() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Report preview</DialogTitle>
+            <DialogDescription>
+              This is exactly what the client will see. Edit any section before publishing.
+            </DialogDescription>
+          </DialogHeader>
+          {preview ? (
+            editing ? (
+              <div className="space-y-3">
+                {(
+                  [
+                    ["acknowledgement", "Acknowledgement"],
+                    ["achievements", "What we achieved"],
+                    ["summary", "Summary"],
+                    ["recommendations", "Recommendations for next month"],
+                  ] as const
+                ).map(([k, l]) => (
+                  <div key={k} className="space-y-1">
+                    <Label>{l}</Label>
+                    <Textarea rows={4} value={preview.draft[k]} onChange={(e) => setField(k, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ReportPreview
+                clientName={nameById.get(preview.customerId) ?? "Client"}
+                month={preview.month}
+                year={preview.year}
+                score={preview.score}
+                metrics={metricsFor(preview.customerId)}
+                draft={preview.draft}
+              />
+            )
+          ) : null}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditing((v) => !v)}>
+              {editing ? "Back to preview" : "Edit sections"}
+            </Button>
+            <Button variant="secondary" disabled={busy} onClick={() => savePreview(false)}>
+              {preview?.status === "published" ? "Save changes" : "Save as draft"}
+            </Button>
+            {preview?.status !== "published" ? (
+              <Button disabled={busy} onClick={() => savePreview(true)}>
+                Publish to client
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
