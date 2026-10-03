@@ -164,6 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: notifications } = useNotifications(isAdmin ? undefined : profile?.id);
   const unread = (notifications ?? []).filter((n) => !n.read).length;
   const name = profile?.full_name ?? email;
+  const avatarUrl = useAvatarUrl(profile?.avatar_url);
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
