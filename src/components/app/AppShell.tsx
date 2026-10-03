@@ -24,6 +24,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/lib/app-context";
+import { useAvatarUrl } from "@/lib/avatar";
 import { useNotifications, useSettings } from "@/lib/data";
 import { initials } from "@/lib/platform";
 import { cn } from "@/lib/utils";
@@ -176,7 +177,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border lg:block">
-        <SidebarContent isAdmin={isAdmin} name={name} brand={brand} onSignOut={handleSignOut} />
+        <SidebarContent isAdmin={isAdmin} name={name} brand={brand} avatarUrl={avatarUrl} onSignOut={handleSignOut} />
       </aside>
 
       <div className="lg:pl-64">
