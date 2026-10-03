@@ -194,6 +194,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 isAdmin={isAdmin}
                 name={name}
                 brand={brand}
+                avatarUrl={avatarUrl}
                 onNavigate={() => setOpen(false)}
                 onSignOut={handleSignOut}
               />
