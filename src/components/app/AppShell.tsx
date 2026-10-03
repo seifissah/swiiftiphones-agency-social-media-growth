@@ -105,12 +105,14 @@ function SidebarContent({
   isAdmin,
   name,
   brand,
+  avatarUrl,
   onNavigate,
   onSignOut,
 }: {
   isAdmin: boolean;
   name: string;
   brand: string;
+  avatarUrl?: string | null | undefined;
   onNavigate?: (() => void) | undefined;
   onSignOut: () => void;
 }) {
