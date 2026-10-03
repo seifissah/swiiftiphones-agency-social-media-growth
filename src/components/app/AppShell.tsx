@@ -132,8 +132,12 @@ function SidebarContent({
       <NavList items={isAdmin ? ADMIN_NAV : CUSTOMER_NAV} onNavigate={onNavigate} />
       <div className="mt-4 border-t border-sidebar-border px-3 pt-4">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
-            {initials(name)}
+          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initials(name)
+            )}
           </span>
           <span className="truncate text-sm">{name}</span>
         </div>
