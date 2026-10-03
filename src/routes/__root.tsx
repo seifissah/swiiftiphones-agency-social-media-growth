@@ -6,7 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
-  defaultErrorComponent,
+  ErrorComponent as RouterErrorComponent,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
@@ -106,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent as unknown as typeof defaultErrorComponent,
+  errorComponent: ErrorComponent as unknown as typeof RouterErrorComponent,
 });
 
 function RootShell({ children }: { children: ReactNode }) {
