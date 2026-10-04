@@ -37,6 +37,7 @@ import {
   sumField,
 } from "@/lib/platform";
 
+import { AvatarCircle } from "@/components/app/AvatarCircle";
 import { GrowthChart } from "@/components/app/GrowthChart";
 import { StatCard } from "@/components/app/StatCard";
 import { EmptyState, LoadingBlock } from "@/components/app/PageHeader";
