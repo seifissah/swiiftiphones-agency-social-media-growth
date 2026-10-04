@@ -16,6 +16,7 @@ import {
   previousPerAccount,
   sumField,
 } from "@/lib/platform";
+import { AvatarCircle } from "@/components/app/AvatarCircle";
 import { LoadingBlock, PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,9 +139,7 @@ function AdminCustomers() {
               <TableRow key={c.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-xs font-semibold">
-                      {initials(c.full_name)}
-                    </span>
+                    <AvatarCircle name={c.full_name} avatarPath={c.avatar_url} />
                     <div className="min-w-0">
                       <Link
                         to="/admin/customers/$id"
