@@ -339,9 +339,11 @@ function CustomerDetail() {
 
       <header className="panel flex flex-wrap items-start justify-between gap-4 p-5">
         <div className="flex gap-4">
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-secondary font-semibold">
-            {initials(customer.full_name)}
-          </span>
+          <AvatarCircle
+            name={customer.full_name}
+            avatarPath={customer.avatar_url}
+            className="h-14 w-14 text-base"
+          />
           <div>
             <h1 className="font-display text-2xl font-semibold">{customer.full_name}</h1>
             <p className="text-sm text-muted-foreground">
