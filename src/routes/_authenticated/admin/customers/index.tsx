@@ -10,7 +10,6 @@ import {
   STATUS_LABEL,
   STATUS_TONE,
   growth,
-  initials,
   latestPerAccount,
   nf,
   previousPerAccount,
