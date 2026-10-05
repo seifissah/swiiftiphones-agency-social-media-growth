@@ -100,6 +100,17 @@ function CustomerDetail() {
   const { data: metrics } = useMetrics(accIds);
   const { data: reports } = useReports(id);
   const { data: goals } = useGoals(id);
+  const { data: customerMessages } = useMessages(id);
+  const [msgSubject, setMsgSubject] = useState("");
+  const [msgBody, setMsgBody] = useState("");
+  const [msgBusy, setMsgBusy] = useState(false);
+  const thread = useMemo(
+    () =>
+      (customerMessages ?? [])
+        .slice()
+        .sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    [customerMessages],
+  );
 
   const [newAccount, setNewAccount] = useState({ platform: "instagram", handle: "", url: "" });
   const [metricForm, setMetricForm] = useState({
@@ -893,6 +904,66 @@ function CustomerDetail() {
               </article>
             ))
           )}
+        </TabsContent>
+
+        <TabsContent value="messages" className="mt-4 space-y-4">
+          <div className="space-y-3">
+            {!thread.length ? (
+              <div className="panel p-8 text-center text-sm text-muted-foreground">
+                No messages with {customer.full_name} yet.
+              </div>
+            ) : (
+              thread.map((m) => {
+                const fromCustomer = m.direction === "customer_to_admin";
+                return (
+                  <article
+                    key={m.id}
+                    className={cn(
+                      "panel p-4",
+                      fromCustomer && "border-primary/25 bg-primary/[0.04]",
+                    )}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-medium">{m.subject}</p>
+                      <span className="text-xs text-muted-foreground">
+                        {fromCustomer ? customer.full_name : "You"} ·{" "}
+                        {new Date(m.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                      {m.body}
+                    </p>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <form onSubmit={sendMessage} className="panel space-y-3 p-5">
+            <h2 className="font-display text-lg font-semibold">
+              Message {customer.full_name}
+            </h2>
+            <div className="space-y-2">
+              <Label htmlFor="ms">Subject</Label>
+              <Input
+                id="ms"
+                value={msgSubject}
+                onChange={(e) => setMsgSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mb">Message</Label>
+              <Textarea
+                id="mb"
+                rows={5}
+                value={msgBody}
+                onChange={(e) => setMsgBody(e.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={msgBusy}>
+              Send message
+            </Button>
+          </form>
         </TabsContent>
 
         <TabsContent value="notes" className="mt-4">
