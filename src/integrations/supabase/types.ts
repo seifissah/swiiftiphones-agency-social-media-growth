@@ -228,6 +228,51 @@ export type Database = {
           },
         ]
       }
+      performance_reviews: {
+        Row: {
+          comment: string | null
+          customer_id: string
+          id: string
+          score: number | null
+          social_account_id: string | null
+          updated_at: string
+          verdict: string
+        }
+        Insert: {
+          comment?: string | null
+          customer_id: string
+          id?: string
+          score?: number | null
+          social_account_id?: string | null
+          updated_at?: string
+          verdict?: string
+        }
+        Update: {
+          comment?: string | null
+          customer_id?: string
+          id?: string
+          score?: number | null
+          social_account_id?: string | null
+          updated_at?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_reviews_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_reviews_social_account_id_fkey"
+            columns: ["social_account_id"]
+            isOneToOne: false
+            referencedRelation: "social_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           auto_approve: boolean
