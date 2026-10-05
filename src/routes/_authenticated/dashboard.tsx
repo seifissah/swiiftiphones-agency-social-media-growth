@@ -6,6 +6,7 @@ import { useAccounts, useGoals, useMetrics, useReports } from "@/lib/data";
 import {
   avgEngagement,
   buildSeries,
+  computeStats,
   compact,
   filterByRange,
   growth,
@@ -130,7 +131,7 @@ function CustomerDashboard() {
           {accountFeedback.map((r) => {
             const acc = accounts.find((a) => a.id === r.social_account_id);
             if (!acc) return null;
-            const accScore = performanceScore({ growthPct: 0, engagement: 0, reach: 0, posts: 0 });
+            const accScore = computeStats((metrics ?? []).filter((m) => m.social_account_id === acc.id)).score;
             const v = resolveScore(r.score ?? accScore, r);
             return (
               <div key={r.id} className="rounded-md border border-border p-3">
