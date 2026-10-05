@@ -11,6 +11,7 @@ import {
   useAccounts,
   useCustomer,
   useGoals,
+  useMessages,
   useMetrics,
   useReports,
 } from "@/lib/data";
