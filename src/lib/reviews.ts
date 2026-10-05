@@ -15,8 +15,8 @@ export type Review = {
 export const VERDICTS: Record<string, { label: string; tone: string; dot: string }> = {
   excellent: { label: "Excellent", tone: "text-success", dot: "bg-success" },
   good: { label: "Good progress", tone: "text-primary", dot: "bg-primary" },
-  improving: { label: "Improving", tone: "text-warning", dot: "bg-warning" },
-  needs_improvement: { label: "Needs improvement", tone: "text-warning", dot: "bg-warning" },
+  improving: { label: "Improving", tone: "text-warning-foreground", dot: "bg-warning" },
+  needs_improvement: { label: "Needs improvement", tone: "text-warning-foreground", dot: "bg-warning" },
   priority: { label: "Priority focus", tone: "text-destructive", dot: "bg-destructive" },
 };
 
