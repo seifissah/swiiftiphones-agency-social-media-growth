@@ -6,6 +6,7 @@ import { useAccounts, useGoals, useMetrics, useReports } from "@/lib/data";
 import {
   avgEngagement,
   buildSeries,
+  computeStats,
   compact,
   filterByRange,
   growth,
@@ -16,7 +17,6 @@ import {
   performanceScore,
   previousPerAccount,
   RANGES,
-  scoreBand,
   sumField,
 } from "@/lib/platform";
 import { GrowthChart } from "@/components/app/GrowthChart";
@@ -25,6 +25,7 @@ import { EmptyState, LoadingBlock } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { resolveScore, usePerformanceReviews } from "@/lib/reviews";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: CustomerDashboard,
@@ -66,7 +67,11 @@ function CustomerDashboard() {
   const views = sumField(latest, "views");
 
   const score = performanceScore({ growthPct, engagement, reach, posts });
-  const band = scoreBand(score);
+  const { data: reviews } = usePerformanceReviews(profile?.id);
+  const band = resolveScore(score, (reviews ?? []).find((r) => !r.social_account_id));
+  const accountFeedback = (reviews ?? []).filter(
+    (r) => r.social_account_id && (r.comment?.trim() || r.verdict !== "auto" || r.score !== null),
+  );
   const latestReport = (reports ?? [])[0];
 
   if (isAdmin) {
@@ -112,11 +117,42 @@ function CustomerDashboard() {
               Performance score
             </p>
             <p className="font-display text-lg font-semibold">
-              {score}/100 <span className={cn("text-sm font-medium", band.tone)}>{band.label}</span>
+              {band.score}/100{" "}
+              <span className={cn("text-sm font-medium", band.tone)}>{band.label}</span>
             </p>
           </div>
         </div>
       </div>
+
+      {band.comment || accountFeedback.length ? (
+        <section className="panel space-y-3 p-5">
+          <h2 className="font-display text-lg font-semibold">From your account manager</h2>
+          {band.comment ? <p className="whitespace-pre-wrap text-sm">{band.comment}</p> : null}
+          {accountFeedback.map((r) => {
+            const acc = accounts.find((a) => a.id === r.social_account_id);
+            if (!acc) return null;
+            const accScore = computeStats((metrics ?? []).filter((m) => m.social_account_id === acc.id)).score;
+            const v = resolveScore(r.score ?? accScore, r);
+            return (
+              <div key={r.id} className="rounded-md border border-border p-3">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-medium">
+                    {PLATFORM_LABEL[acc.platform] ?? acc.platform} · {acc.handle}
+                  </span>
+                  <span className={cn("h-2 w-2 rounded-full", v.dot)} />
+                  <span className={cn("font-medium", v.tone)}>{v.label}</span>
+                  {r.score !== null ? (
+                    <span className="text-muted-foreground">· {r.score}/100</span>
+                  ) : null}
+                </div>
+                {v.comment ? (
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{v.comment}</p>
+                ) : null}
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

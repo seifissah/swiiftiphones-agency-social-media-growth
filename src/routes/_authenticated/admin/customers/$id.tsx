@@ -38,6 +38,8 @@ import {
 } from "@/lib/platform";
 
 import { AvatarCircle } from "@/components/app/AvatarCircle";
+import { ScoreReviewPanel } from "@/components/app/ScoreReviewPanel";
+import { resolveScore, usePerformanceReviews } from "@/lib/reviews";
 import { GrowthChart } from "@/components/app/GrowthChart";
 import { StatCard } from "@/components/app/StatCard";
 import { EmptyState, LoadingBlock } from "@/components/app/PageHeader";
@@ -156,7 +158,8 @@ function CustomerDetail() {
   const reach = sumField(latest, "reach");
   const posts = sumField(latest, "posts");
   const score = performanceScore({ growthPct, engagement, reach, posts });
-  const band = scoreBand(score);
+  const { data: reviews } = usePerformanceReviews(id);
+  const band = resolveScore(score, (reviews ?? []).find((r) => !r.social_account_id));
   const series = useMemo(() => buildSeries(metrics ?? []), [metrics]);
 
   const scopedMetrics = useMemo(
@@ -364,7 +367,8 @@ function CustomerDetail() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="panel flex items-center gap-2 px-3 py-2">
             <span className={cn("h-2.5 w-2.5 rounded-full", band.dot)} />
-            <span className="text-sm font-semibold">{score}/100</span>
+            <span className="text-sm font-semibold">{band.score}/100</span>
+            <span className={cn("text-xs", band.tone)}>{band.label}</span>
           </div>
           {customer.status === "active" ? (
             <Button variant="outline" onClick={() => changeStatus("suspended")}>
@@ -388,6 +392,7 @@ function CustomerDetail() {
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="score">Score & feedback</TabsTrigger>
           <TabsTrigger value="growth">Growth</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="metrics">Add metrics</TabsTrigger>
@@ -478,6 +483,10 @@ function CustomerDetail() {
               <GrowthChart data={series} />
             </div>
           </section>
+        </TabsContent>
+
+        <TabsContent value="score" className="mt-4">
+          <ScoreReviewPanel customerId={id} accounts={accounts ?? []} metrics={metrics ?? []} />
         </TabsContent>
 
         <TabsContent value="accounts" className="mt-4 space-y-4">
