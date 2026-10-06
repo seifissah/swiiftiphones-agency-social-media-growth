@@ -280,6 +280,31 @@ function CustomerDetail() {
     qc.invalidateQueries({ queryKey: ["goals"] });
   }
 
+  async function sendMessage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!msgSubject.trim() || !msgBody.trim()) {
+      toast.error("Fill in the subject and message.");
+      return;
+    }
+    setMsgBusy(true);
+    const { error } = await supabase.from("messages").insert({
+      customer_id: id,
+      subject: msgSubject.trim(),
+      body: msgBody.trim(),
+      direction: "admin_to_customer",
+    });
+    setMsgBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await notify(id, "New message from your account manager", msgSubject.trim());
+    setMsgSubject("");
+    setMsgBody("");
+    toast.success("Message sent.");
+    qc.invalidateQueries({ queryKey: ["messages"] });
+  }
+
   async function saveNotes() {
     const { error } = await supabase
       .from("profile_admin_notes")
