@@ -11,10 +11,10 @@ export const REPORT_FIELDS = [
 export type ReportSnapshot = {
   clientName: string;
   rows: MonthlyRow[];
-  current?: MonthlyRow;
-  previous?: MonthlyRow;
-  interactions?: number;
-  previousInteractions?: number;
+  current?: MonthlyRow | undefined;
+  previous?: MonthlyRow | undefined;
+  interactions?: number | undefined;
+  previousInteractions?: number | undefined;
   accounts: string[];
 };
 export type ReportDraft = {
@@ -22,7 +22,7 @@ export type ReportDraft = {
   whatWorked?: string; contentAnalysis?: string; growthDrivers?: string; improvements?: string;
   strategy?: string; targets?: string; preparedBy?: string; rating?: string;
   snapshot?: ReportSnapshot;
-  invoice?: { number: string; service: string; amount: string; currency: string; terms: string; contact: string; paymentDetails: string };
+  invoice?: { number: string; service: string; amount: string; currency: string; terms: string; contact: string; paymentDetails: string } | undefined;
 };
 
 export function monthWindow(metrics: Metric[], month: number, year: number) {

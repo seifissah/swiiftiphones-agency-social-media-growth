@@ -56,7 +56,7 @@ import {
 } from "@/components/app/ReportPreview";
 
 export const Route = createFileRoute("/_authenticated/admin/reports")({
-  validateSearch: (search: Record<string, unknown>) => ({ customer: typeof search.customer === "string" ? search.customer : undefined, report: typeof search.report === "string" ? search.report : undefined }),
+  validateSearch: (search: Record<string, unknown>): { customer?: string; report?: string } => ({ ...(typeof search['customer'] === "string" ? { customer: search['customer'] } : {}), ...(typeof search['report'] === "string" ? { report: search['report'] } : {}) }),
   head: () => ({ meta: [{ title: "Report Studio | Swiiftiphones Agency" }, { name: "description", content: "Prepare, review and publish client-specific monthly growth reports." }, { property: "og:title", content: "Report Studio | Swiiftiphones Agency" }, { property: "og:description", content: "Monthly growth reports prepared for agency clients." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AdminReports,
 });
