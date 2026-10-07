@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  head: () => ({ meta: [{ title: 'Your Profile | Swiiftiphones Agency' }, { name: "description", content: 'Manage your profile on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Your Profile | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage your profile on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: ProfilePage,
 });
 

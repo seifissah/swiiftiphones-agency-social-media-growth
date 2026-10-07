@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/messages")({
+  head: () => ({ meta: [{ title: 'Messages | Swiiftiphones Agency' }, { name: "description", content: 'Manage messages on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Messages | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage messages on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: MessagesPage,
 });
 

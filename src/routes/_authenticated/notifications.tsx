@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
+  head: () => ({ meta: [{ title: 'Notifications | Swiiftiphones Agency' }, { name: "description", content: 'Manage notifications on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Notifications | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage notifications on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: NotificationsPage,
 });
 

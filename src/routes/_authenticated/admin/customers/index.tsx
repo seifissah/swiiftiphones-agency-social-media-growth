@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/")({
+  head: () => ({ meta: [{ title: 'Customers | Swiiftiphones Agency' }, { name: "description", content: 'Manage customers on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Customers | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage customers on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AdminCustomers,
 });
 

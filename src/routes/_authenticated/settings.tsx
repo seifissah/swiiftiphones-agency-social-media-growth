@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  head: () => ({ meta: [{ title: 'Account Settings | Swiiftiphones Agency' }, { name: "description", content: 'Manage account settings on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Account Settings | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage account settings on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: SettingsPage,
 });
 

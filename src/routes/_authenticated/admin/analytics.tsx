@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
+  head: () => ({ meta: [{ title: 'Agency Analytics | Swiiftiphones Agency' }, { name: "description", content: 'Manage agency analytics on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Agency Analytics | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage agency analytics on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AdminAnalytics,
 });
 

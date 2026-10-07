@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
+  head: () => ({ meta: [{ title: 'Agency Overview | Swiiftiphones Agency' }, { name: "description", content: 'Manage agency overview on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Agency Overview | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage agency overview on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AdminDashboard,
 });
 
