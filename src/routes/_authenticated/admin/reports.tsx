@@ -191,20 +191,6 @@ function AdminReports() {
     setPreview((p) => (p ? { ...p, draft: { ...p.draft, [k]: v } } : p));
   }
 
-  async function publish(reportId: string, cid: string, label: string) {
-    const { error } = await supabase
-      .from("monthly_reports")
-      .update({ status: "published" })
-      .eq("id", reportId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await notify(cid, "New monthly report available", `Your ${label} report has been published.`);
-    toast.success("Report published.");
-    qc.invalidateQueries({ queryKey: ["reports"] });
-  }
-
   async function remove(reportId: string) {
     const { error } = await supabase.from("monthly_reports").delete().eq("id", reportId);
     if (error) {
@@ -312,8 +298,8 @@ function AdminReports() {
                         View
                       </Button>
                       {r.status !== "published" ? (
-                        <Button size="sm" onClick={() => publish(r.id, r.customer_id, label)}>
-                          Publish
+                        <Button size="sm" onClick={() => openExisting(r)}>
+                          Review & publish
                         </Button>
                       ) : null}
                       <Button size="sm" variant="outline" onClick={() => remove(r.id)}>
