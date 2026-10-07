@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/admin/audit")({
+  head: () => ({ meta: [{ title: 'Activity Log | Swiiftiphones Agency' }, { name: "description", content: 'Manage activity log on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Activity Log | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage activity log on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AuditLog,
 });
 

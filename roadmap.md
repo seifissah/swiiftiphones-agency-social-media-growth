@@ -1,5 +1,5 @@
 # Report template update
-- [ ] Sample-inspired report preview and editable sections
-- [ ] Client-specific monthly figures and saved report snapshots
-- [ ] PDF export and optional invoice
-- [ ] Consistent admin entry points and verification
+- [x] Sample-inspired report preview and editable sections
+- [x] Client-specific monthly figures and saved report snapshots
+- [x] PDF export and optional invoice
+- [x] Consistent admin entry points and verification (signed-in preview, PDF, draft save/readback; test draft removed)

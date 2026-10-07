@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/goals")({
+  head: () => ({ meta: [{ title: 'Growth Goals | Swiiftiphones Agency' }, { name: "description", content: 'Manage growth goals on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Growth Goals | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage growth goals on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: MyGoals,
 });
 

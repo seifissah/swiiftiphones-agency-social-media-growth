@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
+import { ReportEditor } from "@/components/app/ReportEditor";
+import { createReportDraft } from "@/lib/report-document";
+import { downloadReportPdf } from "@/lib/report-pdf";
+import { usePerformanceReviews, resolveScore } from "@/lib/reviews";
+import { PLATFORM_LABEL } from "@/lib/platform";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/lib/app-context";
 import { logAudit, notify, useAccounts, useCustomers, useMetrics, useReports } from "@/lib/data";
@@ -50,6 +56,8 @@ import {
 } from "@/components/app/ReportPreview";
 
 export const Route = createFileRoute("/_authenticated/admin/reports")({
+  validateSearch: (search: Record<string, unknown>): { customer?: string; report?: string } => ({ ...(typeof search['customer'] === "string" ? { customer: search['customer'] } : {}), ...(typeof search['report'] === "string" ? { report: search['report'] } : {}) }),
+  head: () => ({ meta: [{ title: "Report Studio | Swiiftiphones Agency" }, { name: "description", content: "Prepare, review and publish client-specific monthly growth reports." }, { property: "og:title", content: "Report Studio | Swiiftiphones Agency" }, { property: "og:description", content: "Monthly growth reports prepared for agency clients." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AdminReports,
 });
 
@@ -59,11 +67,13 @@ function AdminReports() {
   const { data: customers } = useCustomers();
   const { data: accounts } = useAccounts();
   const ids = useMemo(() => (accounts ?? []).map((a) => a.id), [accounts]);
-  const { data: metrics } = useMetrics(ids);
+  const { data: metrics, isFetching: loadingMetrics } = useMetrics(ids);
   const { data: reports, isLoading } = useReports();
 
   const now = new Date();
-  const [customerId, setCustomerId] = useState("");
+  const search = Route.useSearch();
+  const [customerId, setCustomerId] = useState(search.customer ?? "");
+  const { data: reviews } = usePerformanceReviews(customerId);
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
   const [notes, setNotes] = useState("");
@@ -105,22 +115,12 @@ function AdminReports() {
     const key = `${y}-${String(m).padStart(2, "0")}`;
     const upto = metricsFor(customerId).filter((x) => x.recorded_on.slice(0, 7) <= key);
     const s = computeStats(upto);
+    const reviewed = resolveScore(s.score, reviews?.find(r => r.social_account_id === null));
     const name = nameById.get(customerId) ?? "Client";
-    const period = `${MONTHS[m - 1]} ${y}`;
-    setPreview({
-      reportId: null,
-      customerId,
-      month: m,
-      year: y,
-      score: s.score,
-      status: "draft",
-      draft: {
-        acknowledgement: buildAcknowledgement(name, period),
-        achievements: buildAchievements(upto, m, y),
-        summary: buildSummary(name, period, s),
-        recommendations: buildRecommendations(s),
-      },
-    });
+    const draft = createReportDraft(name, metricsFor(customerId), m, y, admin?.full_name || "Swiiftiphones Agency", (accounts ?? []).filter(a => a.customer_id === customerId).map(a => `${PLATFORM_LABEL[a.platform] ?? a.platform} @${a.handle.replace(/^@/, "")}`));
+    draft.rating = reviewed.label;
+    if (reviewed.comment) draft.improvements = reviewed.comment;
+    setPreview({ reportId: null, customerId, month: m, year: y, score: reviewed.score, status: "draft", draft });
     setEditing(false);
   }
 
@@ -132,13 +132,22 @@ function AdminReports() {
       year: r.year,
       score: r.performance_score,
       status: r.status,
-      draft: { ...unpackSummary(r.summary), recommendations: r.recommendations ?? "" },
+      draft: { ...unpackSummary(r.summary), recommendations: r.recommendations ?? unpackSummary(r.summary).recommendations },
     });
     setEditing(false);
   }
 
+  useEffect(() => {
+    if (!search.report || !reports) return;
+    const report = reports.find(r => r.id === search.report);
+    if (report) openExisting(report);
+  }, [search.report, reports]);
+
   async function savePreview(publishNow: boolean) {
     if (!preview) return;
+    if (publishNow && preview.draft.invoice && (!preview.draft.invoice.number.trim() || !preview.draft.invoice.service.trim() || !preview.draft.invoice.amount.trim() || !Number.isFinite(Number(preview.draft.invoice.amount)) || Number(preview.draft.invoice.amount) < 0 || !preview.draft.invoice.currency.trim() || !preview.draft.invoice.terms.trim())) {
+      toast.error("Complete the invoice number, service, amount, currency and payment terms before publishing."); return;
+    }
     const name = nameById.get(preview.customerId) ?? "Client";
     const label = `${MONTHS[preview.month - 1]} ${preview.year}`;
     const payload = {
@@ -180,20 +189,6 @@ function AdminReports() {
 
   function setField(k: keyof ReportDraft, v: string) {
     setPreview((p) => (p ? { ...p, draft: { ...p.draft, [k]: v } } : p));
-  }
-
-  async function publish(reportId: string, cid: string, label: string) {
-    const { error } = await supabase
-      .from("monthly_reports")
-      .update({ status: "published" })
-      .eq("id", reportId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await notify(cid, "New monthly report available", `Your ${label} report has been published.`);
-    toast.success("Report published.");
-    qc.invalidateQueries({ queryKey: ["reports"] });
   }
 
   async function remove(reportId: string) {
@@ -264,7 +259,7 @@ function AdminReports() {
           </Select>
         </div>
         <div className="flex items-end">
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button type="submit" className="w-full" disabled={busy || loadingMetrics || !customers || !accounts}>
             Preview full report
           </Button>
         </div>
@@ -303,8 +298,8 @@ function AdminReports() {
                         View
                       </Button>
                       {r.status !== "published" ? (
-                        <Button size="sm" onClick={() => publish(r.id, r.customer_id, label)}>
-                          Publish
+                        <Button size="sm" onClick={() => openExisting(r)}>
+                          Review & publish
                         </Button>
                       ) : null}
                       <Button size="sm" variant="outline" onClick={() => remove(r.id)}>
@@ -336,21 +331,7 @@ function AdminReports() {
           </DialogHeader>
           {preview ? (
             editing ? (
-              <div className="space-y-3">
-                {(
-                  [
-                    ["acknowledgement", "Acknowledgement"],
-                    ["achievements", "What we achieved"],
-                    ["summary", "Summary"],
-                    ["recommendations", "Recommendations for next month"],
-                  ] as const
-                ).map(([k, l]) => (
-                  <div key={k} className="space-y-1">
-                    <Label>{l}</Label>
-                    <Textarea rows={4} value={preview.draft[k]} onChange={(e) => setField(k, e.target.value)} />
-                  </div>
-                ))}
-              </div>
+              <ReportEditor draft={preview.draft} onChange={draft => setPreview(p => p ? { ...p, draft } : p)} />
             ) : (
               <ReportPreview
                 clientName={nameById.get(preview.customerId) ?? "Client"}
@@ -362,7 +343,8 @@ function AdminReports() {
               />
             )
           ) : null}
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-wrap gap-2">
+            <Button variant="outline" disabled={!preview || busy} onClick={async () => { if (!preview) return; try { await downloadReportPdf(nameById.get(preview.customerId) ?? "Client", preview.month, preview.year, preview.score, metricsFor(preview.customerId), preview.draft); } catch { toast.error("The PDF could not be created. Please try again."); } }}><Download className="mr-1.5 h-4 w-4" />Download PDF</Button>
             <Button variant="outline" onClick={() => setEditing((v) => !v)}>
               {editing ? "Back to preview" : "Edit sections"}
             </Button>

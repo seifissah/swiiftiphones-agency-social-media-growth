@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { downloadReportPdf } from "@/lib/report-pdf";
 import { Download } from "lucide-react";
 import { useApp } from "@/lib/app-context";
 import { useAccounts, useMetrics, useReports, type Report } from "@/lib/data";
@@ -11,30 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/reports")({
+  head: () => ({ meta: [{ title: "Your Monthly Reports | Swiiftiphones Agency" }, { name: "description", content: "Read and download your published monthly social media growth reports." }, { property: "og:title", content: "Your Monthly Reports | Swiiftiphones Agency" }, { property: "og:description", content: "Your account manager’s monthly performance reports." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: MyReports,
 });
-
-function reportText(r: Report, name: string) {
-  const s = unpackSummary(r.summary);
-  return [
-    `${name} — Monthly performance report`,
-    `${MONTHS[r.month - 1]} ${r.year}`,
-    ``,
-    `Performance score: ${r.performance_score}/100`,
-    ``,
-    `Acknowledgement`,
-    s.acknowledgement || "—",
-    ``,
-    `What we achieved`,
-    s.achievements || "—",
-    ``,
-    `Summary`,
-    s.summary || "—",
-    ``,
-    `Recommendations for next month`,
-    r.recommendations ?? "—",
-  ].join("\n");
-}
 
 function MyReports() {
   const { profile } = useApp();
@@ -48,16 +29,9 @@ function MyReports() {
 
   const published = (reports ?? []).filter((r) => r.status === "published");
 
-  function download(r: Report) {
-    const blob = new Blob([reportText(r, profile?.full_name ?? "Client")], {
-      type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `report-${r.year}-${String(r.month).padStart(2, "0")}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function download(r: Report) {
+    try { await downloadReportPdf(profile?.full_name ?? "Client", r.month, r.year, r.performance_score, metrics ?? [], { ...unpackSummary(r.summary), recommendations: r.recommendations ?? unpackSummary(r.summary).recommendations }); }
+    catch { toast.error("The PDF could not be created. Please try again."); }
   }
 
   return (
@@ -93,7 +67,7 @@ function MyReports() {
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">Published</Badge>
                     <Button variant="outline" size="sm" onClick={() => download(r)}>
-                      <Download className="mr-1.5 h-4 w-4" /> Export
+                      <Download className="mr-1.5 h-4 w-4" /> PDF
                     </Button>
                     <Button size="sm" onClick={() => setOpenId(open ? null : r.id)}>
                       {open ? "Hide" : "Read"}
@@ -108,7 +82,7 @@ function MyReports() {
                       year={r.year}
                       score={r.performance_score}
                       metrics={metrics ?? []}
-                      draft={{ ...unpackSummary(r.summary), recommendations: r.recommendations ?? "" }}
+                      draft={{ ...unpackSummary(r.summary), recommendations: r.recommendations ?? unpackSummary(r.summary).recommendations }}
                     />
                   </div>
                 ) : null}

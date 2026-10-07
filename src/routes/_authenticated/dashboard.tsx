@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { resolveScore, usePerformanceReviews } from "@/lib/reviews";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  head: () => ({ meta: [{ title: 'Growth Dashboard | Swiiftiphones Agency' }, { name: "description", content: 'Manage growth dashboard on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Growth Dashboard | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage growth dashboard on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: CustomerDashboard,
 });
 

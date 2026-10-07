@@ -38,6 +38,7 @@ import {
   sumField,
 } from "@/lib/platform";
 
+import { unpackSummary } from "@/components/app/ReportPreview";
 import { AvatarCircle } from "@/components/app/AvatarCircle";
 import { ScoreReviewPanel } from "@/components/app/ScoreReviewPanel";
 import { resolveScore, usePerformanceReviews } from "@/lib/reviews";
@@ -67,6 +68,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
+  head: () => ({ meta: [{ title: 'Customer Profile | Swiiftiphones Agency' }, { name: "description", content: 'Manage customer profile on the Swiiftiphones Agency social media growth platform.' }, { property: "og:title", content: 'Customer Profile | Swiiftiphones Agency' }, { property: "og:description", content: 'Manage customer profile on the Swiiftiphones Agency social media growth platform.' }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: CustomerDetail,
 });
 
@@ -316,42 +318,6 @@ function CustomerDetail() {
     toast.success("Notes saved.");
     qc.invalidateQueries({ queryKey: ["admin-note", id] });
   }
-
-  async function generateReport(publish: boolean) {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-    const period = `${MONTHS[month - 1]} ${year}`;
-    setGenerating(true);
-    const { error } = await supabase.from("monthly_reports").insert({
-      customer_id: id,
-      month,
-      year,
-      summary: buildSummary(customer!.full_name, period, stats),
-      recommendations: buildRecommendations(stats),
-      performance_score: stats.score,
-      status: publish ? "published" : "draft",
-    });
-    setGenerating(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await logAudit({
-      adminName: admin?.full_name ?? "Admin",
-      action: publish ? "published monthly report" : "generated monthly report",
-      customerId: id,
-      customerName: customer!.full_name,
-      details: period,
-    });
-    if (publish) {
-      await notify(id, "New monthly report available", `Your ${period} report has been published.`);
-    }
-    toast.success(publish ? "Report published." : "Draft report generated.");
-    qc.invalidateQueries({ queryKey: ["reports"] });
-  }
-
-
 
   async function changeStatus(next: "active" | "suspended" | "rejected") {
     const { error } = await supabase.from("profiles").update({ status: next }).eq("id", id);
@@ -875,14 +841,7 @@ function CustomerDetail() {
                   {scoreBand(stats.score).label}.
                 </p>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" disabled={generating} onClick={() => generateReport(false)}>
-                  Save as draft
-                </Button>
-                <Button disabled={generating} onClick={() => generateReport(true)}>
-                  Generate &amp; publish
-                </Button>
-              </div>
+              <Button asChild><Link to="/admin/reports" search={{ customer: id }}>Preview full report</Link></Button>
             </div>
             <div className="mt-4 space-y-3 border-t border-border pt-4 text-sm">
               <div>
@@ -925,7 +884,8 @@ function CustomerDetail() {
                     {r.performance_score}/100 · {r.status}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">{r.summary}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{unpackSummary(r.summary).summary}</p>
+                <Button asChild variant="outline" size="sm" className="mt-3"><Link to="/admin/reports" search={{ customer: id, report: r.id }}>View full report</Link></Button>
               </article>
             ))
           )}
