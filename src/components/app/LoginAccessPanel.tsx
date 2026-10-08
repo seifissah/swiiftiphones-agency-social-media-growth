@@ -18,11 +18,12 @@ export function LoginAccessPanel({ profileId, name }: { profileId: string; name:
     try {
       const r = await issue({ data: { profileId } });
       setResult(r);
-      try {
-        await (logAudit as (...a: unknown[]) => unknown)("Issued login access code", profileId, name);
-      } catch {
-        /* audit is best-effort */
-      }
+      void logAudit({
+        adminName: "Admin",
+        action: "Issued login access code",
+        customerId: profileId,
+        customerName: name,
+      }).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not create code");
     } finally {
