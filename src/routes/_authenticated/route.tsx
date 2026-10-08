@@ -1,13 +1,59 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { Clock, LogOut, ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, KeyRound, LogOut, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppProvider } from "@/lib/app-context";
 import { claimRole } from "@/lib/roles.functions";
+import { clearPasswordFlag } from "@/lib/access.functions";
 import type { Profile } from "@/lib/platform";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+function ChangePasswordScreen({ onDone }: { onDone: () => void }) {
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent): Promise<void> {
+    e.preventDefault();
+    if (pw.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+    if (pw !== confirm) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    if (error) {
+      setBusy(false);
+      toast.error(error.message);
+      return;
+    }
+    await clearPasswordFlag();
+    await supabase.auth.refreshSession();
+    setBusy(false);
+    toast.success("Password updated");
+    onDone();
+  }
+  return (
+    <div className="grid min-h-screen place-items-center bg-background px-4">
+      <form onSubmit={submit} className="panel w-full max-w-md space-y-4 p-8">
+        <KeyRound className="h-6 w-6 text-primary" />
+        <h1 className="font-display text-2xl font-semibold">Choose a new password</h1>
+        <p className="text-sm text-muted-foreground">
+          You signed in with an access code from your account manager. Set your own password to continue.
+        </p>
+        <Input type="password" placeholder="New password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+        <Input type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+        <Button type="submit" className="w-full" disabled={busy}>Save password</Button>
+      </form>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -51,6 +97,7 @@ async function loadMe() {
     email: user.email ?? "",
     profile: (fresh as Profile | null) ?? null,
     isAdmin,
+    mustChangePassword: user.user_metadata?.["must_change_password"] === true,
   };
 }
 
@@ -83,6 +130,11 @@ function AuthenticatedLayout() {
   }
 
   if (!data) return null;
+
+  if (data.mustChangePassword) {
+    return <ChangePasswordScreen onDone={() => queryClient.invalidateQueries({ queryKey: ["me"] })} />;
+  }
+
 
   const status = data.profile?.status;
   if (!data.isAdmin && status !== "active") {

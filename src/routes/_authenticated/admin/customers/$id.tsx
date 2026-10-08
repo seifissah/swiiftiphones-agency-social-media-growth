@@ -40,6 +40,7 @@ import {
 
 import { unpackSummary } from "@/components/app/ReportPreview";
 import { AvatarCircle } from "@/components/app/AvatarCircle";
+import { LoginAccessPanel } from "@/components/app/LoginAccessPanel";
 import { ScoreReviewPanel } from "@/components/app/ScoreReviewPanel";
 import { resolveScore, usePerformanceReviews } from "@/lib/reviews";
 import { GrowthChart } from "@/components/app/GrowthChart";
@@ -406,6 +407,7 @@ function CustomerDetail() {
         </TabsList>
 
         <TabsContent value="profile" className="mt-4 space-y-4">
+          <LoginAccessPanel profileId={customer.id} name={customer.full_name} />
           <section className="panel p-5">
             <h2 className="font-display text-lg font-semibold">Account details</h2>
             <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
