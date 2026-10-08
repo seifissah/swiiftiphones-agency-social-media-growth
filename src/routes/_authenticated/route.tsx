@@ -18,13 +18,20 @@ function ChangePasswordScreen({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    if (pw.length < 8) return toast.error("Password must be at least 8 characters.");
-    if (pw !== confirm) return toast.error("Passwords do not match.");
+    if (pw.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+    if (pw !== confirm) {
+      toast.error("Passwords do not match.");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
     if (error) {
       setBusy(false);
-      return toast.error(error.message);
+      toast.error(error.message);
+      return;
     }
     await clearPasswordFlag();
     await supabase.auth.refreshSession();
